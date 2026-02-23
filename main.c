@@ -14,6 +14,15 @@ typedef struct {
   char date[20];
 } Task;
 
+void cmd_help() {
+  printf("Usage: tm [-h | --help] <command>\n"
+         "\n"
+         "Commands:\n"
+         "    init              create tasks folder under current directory\n"
+         "    add title         add a task\n"
+         "    list              list undone tasks sorted by priority\n");
+}
+
 void cmd_init() {
   if (mkdir(TASK_DIR, 0755) == 0)
     printf("Initialized %s folder.\n", TASK_DIR);
@@ -85,19 +94,27 @@ void cmd_list() {
   qsort(tasks, count, sizeof(Task), compare_tasks);
 
   for (int i = 0; i < count; i++) {
-    printf("%s:2: %s {%s} (%d)\n", tasks[i].path, tasks[i].title, tasks[i].date,
-           tasks[i].priority);
+    printf("%s:2: (%3d) %s\n", tasks[i].path, tasks[i].priority,
+           tasks[i].title);
   }
 }
 
 int main(int argc, char *argv[]) {
-  if (argc < 2)
+  if (argc < 2) {
+    cmd_help();
     return 1;
+  }
+
   if (strcmp(argv[1], "init") == 0)
     cmd_init();
   else if (strcmp(argv[1], "add") == 0 && argc > 2)
     cmd_add(argv[2]);
   else if (strcmp(argv[1], "list") == 0)
     cmd_list();
+  else {
+    cmd_help();
+    return (strcmp(argv[1], "-h") != 0 && strcmp(argv[1], "--help") == 0);
+  }
+
   return 0;
 }
