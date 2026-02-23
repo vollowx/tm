@@ -16,3 +16,11 @@ cd project_dir
 sudo make install
 tm
 ```
+
+For easy integration with other tools, here is the output format of `tm add`:
+
+```
+Task created: <title>
+<timestamp>
+<file_path>:2: <title>
+```

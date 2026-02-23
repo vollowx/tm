@@ -58,7 +58,9 @@ void cmd_add(const char *name) {
 
   fprintf(f, "---\ntitle: %s\npriority: 50\ndone: false\n---\n", name);
   fclose(f);
-  printf("Task created: %s\n", folder_path);
+  printf("Task created: %s\n", name);
+  printf("%s\n", timestamp);
+  printf("%s:2: %s\n", file_path, name);
 }
 
 int compare_tasks(const void *a, const void *b) {
