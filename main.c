@@ -9,6 +9,10 @@
 
 #include "helpers.h"
 
+#define COLLECT_TITLE collected |= 0b001
+#define COLLECT_PRIOR collected |= 0b010
+#define COLLECT_DONE collected |= 0b100
+#define ALL_COLLECTED (collected == 0b111)
 #define TASK_DIR "tasks"
 
 typedef struct {
@@ -24,13 +28,15 @@ typedef struct {
   size_t count;
 } Tasks;
 
-void cmd_help() {
-  printf("Usage: tm [-h | --help] <command>\n"
+void cmd_help(const char *exe_name) {
+  printf("Usage: %s [-h | --help] <command>\n"
          "\n"
          "Commands:\n"
          "    init              create tasks folder under current directory\n"
          "    add title         add a task\n"
-         "    list [--done]     list tasks sorted by priority, undone ones by default\n");
+         "    list [--done]     list tasks sorted by priority, undone ones by "
+         "default\n",
+         exe_name);
 }
 
 void cmd_init() {
@@ -67,17 +73,17 @@ int compare_tasks(const void *a, const void *b) {
   return ((Task *)b)->priority - ((Task *)a)->priority;
 }
 
-void cmd_list(bool show_done) {
+int cmd_list(bool show_done) {
   struct dirent *entry;
-  DIR *dp = opendir(TASK_DIR);
-  if (!dp) {
-    perror("No tasks folder");
-    return;
+  DIR *task_dir = opendir(TASK_DIR);
+  if (!task_dir) {
+    perror("Tasks folder not found.");
+    return 1;
   }
 
   Tasks tasks = {0};
 
-  while ((entry = readdir(dp))) {
+  while ((entry = readdir(task_dir))) {
     if (entry->d_name[0] == '.')
       continue;
 
@@ -86,24 +92,31 @@ void cmd_list(bool show_done) {
 
     FILE *f = fopen(path, "r");
     if (f) {
-      char line[256];
-      char title[128] = "Untitled";
-      int priority = 0;
-      int task_done = 0;
+      char line[256], title[128] = "Untitled";
+      int priority = 0, task_done = 0, collected = 0;
 
-      while (fgets(line, sizeof(line), f)) {
+      // TASK(20260224-155511): Perhaps refine frontmatter parsing and validate
+      // its format
+      while (fgets(line, sizeof(line), f) && !ALL_COLLECTED) {
         if (strncmp(line, "title: ", 7) == 0) {
           line[strcspn(line, "\n")] = 0;
           strncpy(title, line + 7, sizeof(title) - 1);
+          COLLECT_TITLE;
         } else if (strncmp(line, "priority: ", 10) == 0) {
           priority = atoi(line + 10);
+          COLLECT_PRIOR;
         } else if (strncmp(line, "done: ", 6) == 0) {
           task_done = (strstr(line, "true") != NULL);
+          if (task_done == show_done) {
+            COLLECT_DONE;
+          } else {
+            break;
+          }
         }
       }
       fclose(f);
 
-      if (task_done == show_done) {
+      if (ALL_COLLECTED) {
         Task task = {0};
         strcpy(task.path, path);
         strcpy(task.title, title);
@@ -114,18 +127,20 @@ void cmd_list(bool show_done) {
       }
     }
   }
-  closedir(dp);
+  closedir(task_dir);
 
   qsort(tasks.items, tasks.count, sizeof(Task), compare_tasks);
 
   da_foreach(Task, task, &tasks) {
     printf("%s:2: %s [%d]\n", task->path, task->title, task->priority);
   }
+
+  return 0;
 }
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
-    cmd_help();
+    cmd_help(argv[0]);
     return 1;
   }
 
@@ -137,7 +152,7 @@ int main(int argc, char *argv[]) {
     bool show_done = (argc > 2 && strcmp(argv[2], "--done") == 0);
     cmd_list(show_done);
   } else {
-    cmd_help();
+    cmd_help(argv[0]);
     return (strcmp(argv[1], "-h") != 0 && strcmp(argv[1], "--help") == 0);
   }
 
