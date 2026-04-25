@@ -148,7 +148,7 @@ int main(int argc, char *argv[]) {
     cmd_init();
   else if (strcmp(argv[1], "add") == 0 && argc > 2)
     cmd_add(argv[2]);
-  else if (strcmp(argv[1], "list") == 0) {
+  else if (strcmp(argv[1], "ls") == 0) {
     bool show_done = (argc > 2 && strcmp(argv[2], "--done") == 0);
     cmd_list(show_done);
   } else {
