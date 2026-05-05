@@ -9,9 +9,9 @@
 
 #include "helpers.h"
 
-#define COLLECT_TITLE collected |= 0b001
-#define COLLECT_PRIOR collected |= 0b010
-#define COLLECT_DONE collected |= 0b100
+#define COLLECT_TITLE  collected |= 0b001
+#define COLLECT_PRIOR  collected |= 0b010
+#define COLLECT_DONE   collected |= 0b100
 #define ALL_COLLECTED (collected == 0b111)
 #define TASK_DIR "tasks"
 
@@ -34,26 +34,25 @@ void cmd_help(const char *exe_name) {
          "Commands:\n"
          "    init              create tasks folder under current directory\n"
          "    add title         add a task\n"
-         "    list [--done]     list tasks sorted by priority, undone ones by "
-         "default\n",
+         "    ls [--done]       list tasks sorted by priority, undone ones by default\n",
          exe_name);
 }
 
-void cmd_init() {
+void cmd_init(const char *exe_name) {
   if (mkdir(TASK_DIR, 0755) == 0)
-    printf("Initialized %s folder.\n", TASK_DIR);
+    printf("Initialized folder at %s.\n", TASK_DIR);
   else
-    perror("Error");
+    perror(exe_name);
 }
 
-void cmd_add(const char *name) {
+void cmd_add(const char *exe_name, const char *name) {
   char timestamp[20], folder_path[512], file_path[512];
   time_t now = time(NULL);
   strftime(timestamp, sizeof(timestamp), "%Y%m%d-%H%M%S", localtime(&now));
 
   snprintf(folder_path, sizeof(folder_path), "%s/%s", TASK_DIR, timestamp);
   if (mkdir(folder_path, 0755) != 0) {
-    perror("Mkdir failed");
+    perror(exe_name);
     return;
   }
 
@@ -62,7 +61,13 @@ void cmd_add(const char *name) {
   if (!f)
     return;
 
-  fprintf(f, "---\ntitle: %s\npriority: 50\ndone: false\n---\n", name);
+  fprintf(f,
+          "---\n"
+          "title: %s\n"
+          "priority: 50\n"
+          "done: false\n"
+          "---\n",
+          name);
   fclose(f);
   printf("Task created: %s\n", name);
   printf("%s\n", timestamp);
@@ -145,9 +150,9 @@ int main(int argc, char *argv[]) {
   }
 
   if (strcmp(argv[1], "init") == 0)
-    cmd_init();
+    cmd_init(argv[0]);
   else if (strcmp(argv[1], "add") == 0 && argc > 2)
-    cmd_add(argv[2]);
+    cmd_add(argv[0], argv[2]);
   else if (strcmp(argv[1], "ls") == 0) {
     bool show_done = (argc > 2 && strcmp(argv[2], "--done") == 0);
     cmd_list(show_done);
