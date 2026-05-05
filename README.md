@@ -8,10 +8,10 @@ A simple task manager.
 ```sh
 make
 ./tm
-cd project_dir
+cd project-dir
 ./tm init
 ./tm add "Here is the title"
-./tm list
+./tm ls
 
 sudo make install
 tm
